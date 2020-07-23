@@ -1,0 +1,65 @@
+#include <Wire.h>
+#include <SPI.h>
+#include <SD.h>
+#include <SoftwareSerial.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
+
+
+SoftwareSerial HC12(9, 8);
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+File myFile;
+
+int cs = 10, i, j;
+float altitude;
+
+void bmpfunc()
+{
+  sensors_event_t event;
+  bmp.getEvent(&event);
+
+  float temperature;
+  bmp.getTemperature(&temperature);
+  float seaLevelPressure = SENSORS_PRESSURE_SEALEVELHPA;
+  altitude = bmp.pressureToAltitude(seaLevelPressure, event.pressure) * 3.28084;
+  float pressure = event.pressure;
+}
+
+void setup(void)
+{
+  Serial.begin(9600);
+  //HC12.begin(2400);
+  pinMode(cs, OUTPUT);
+  digitalWrite(cs, HIGH);
+
+  if (!bmp.begin())
+  {
+    HC12.println("noBMP");
+    while (1);
+  }
+  if (!SD.begin(cs))
+  {
+    Serial.println("noSD");
+    while (1);
+  }
+  myFile = SD.open("BMP77.txt", FILE_WRITE);
+  for (i = 0; i < 180; i++)
+  {
+    bmpfunc();
+    myFile.print(altitude);
+    myFile.println(i);
+    Serial.println(i);
+    Serial.println(altitude);
+    delay(10);
+  }
+ 
+  myFile.close();
+  Serial.print("SD card ");
+   
+
+}
+
+void loop(void)
+{
+
+}
